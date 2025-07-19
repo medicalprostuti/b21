@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>বোটানি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "ভাইরাসে কোনটি থাকে?",
+          options: {
+            a: "নিউক্লিক এসিড",
+            b: "সাইটোপ্লাজম",
+            c: "নিউক্লিয়াস",
+            d: "মাইটোকন্ড্রিয়া",
+          },
+          correct: "a",
+          explanation:
+            "ভাইরাস একটি অতি ক্ষুদ্র, অকোষীয় সত্তা। এর মূল উপাদান হলো <b>নিউক্লিক অ্যাসিড</b> (DNA অথবা RNA), যা একটি প্রোটিন আবরণ (ক্যাপসিড) দ্বারা আবৃত থাকে। ভাইরাসের নিজস্ব সাইটোপ্লাজম, নিউক্লিয়াস, মাইটোকন্ড্রিয়া, রাইবোজোম বা অন্যান্য কোষীয় অঙ্গাণু নেই। এই কারণে তারা পোষক কোষের বিপাকীয় যন্ত্রপাতি ব্যবহার করে নিজেদের বংশবৃদ্ধি করে।",
+        },
+        {
+          id: 2,
+          question: "নিচের কোনটি DNA ভাইরাস?",
+          options: {
+            a: "হেপাটাইটিস বি",
+            b: "চিকুনগুনিয়া",
+            c: "টোবাকো মোজাইক",
+            d: "ডেঙ্গু",
+          },
+          correct: "a",
+          explanation:
+            "ভাইরাসগুলোকে তাদের জেনেটিক উপাদান (DNA বা RNA) এর উপর ভিত্তি করে শ্রেণীবদ্ধ করা হয়। <b>হেপাটাইটিস বি ভাইরাস (HBV)</b> একটি DNA ভাইরাস, যার জেনেটিক উপাদান হলো আংশিক দ্বিসূত্রক DNA। অন্যদিকে, চিকুনগুনিয়া, টোবাকো মোজাইক ভাইরাস (TMV) এবং ডেঙ্গু ভাইরাস প্রতিটিই RNA ভাইরাস।",
+        },
+        {
+          id: 3,
+          question: "নিচের কোনটি RNA ভাইরাসের উদাহরণ নয়?",
+          options: {
+            a: "Mumps virus",
+            b: "Rabies virus",
+            c: "Polio virus",
+            d: "Variola virus",
+          },
+          correct: "d",
+          explanation:
+            "মাম্পস ভাইরাস, র‍্যাবিস ভাইরাস এবং পোলিও ভাইরাস প্রতিটিই RNA ভাইরাস। এরা একক সূত্রক RNA ধারণ করে। কিন্তু <b>ভ্যারিওলা ভাইরাস (Variola virus)</b>, যা গুটিবসন্ত রোগের কারণ, একটি <b>DNA ভাইরাস</b>। এটি পক্সভিরিডি (Poxviridae) পরিবারের অন্তর্ভুক্ত এবং এর জেনেটিক উপাদান হলো দ্বিসূত্রক DNA।",
+        },
+        {
+          id: 4,
+          question: "কোন ভাইরাসটি ঘনক্ষেত্রাকার আকৃতির?",
+          options: {
+            a: "ভ্যাকসিনিয়া",
+            b: "এনকেফালাইটিস",
+            c: "টিউমার টোবাকো",
+            d: "মোজাইক ভাইরাস মাম্পস",
+          },
+          correct: "a",
+          explanation:
+            "ভাইরাস বিভিন্ন আকৃতির হতে পারে, যেমন ইকোসাহেড্রাল (ঘনক্ষেত্রাকার), হেলিকাল (দণ্ডাকার), গোলাকার, সূত্রাকার ইত্যাদি। <b>ভ্যাকসিনিয়া ভাইরাস</b> পক্সভিরিডি পরিবারের সদস্য এবং এর আকৃতি অপেক্ষাকৃত জটিল এবং <b>ঘনক্ষেত্রাকার (cuboidal) বা ডিম্বাকার</b> হতে পারে। এনকেফালাইটিস সৃষ্টিকারী ভাইরাসগুলো (যেমন জাপানিজ এনকেফালাইটিস ভাইরাস) সাধারণত গোলাকার হয়। টোবাকো মোজাইক ভাইরাস (TMV) দণ্ডাকার এবং মাম্পস ভাইরাস গোলাকার।",
+        },
+        {
+          id: 5,
+          question: "ভাইরাস-এর গঠনে কোন জোড়াটি সঠিক?",
+          options: {
+            a: "প্রোটিন ও নিউক্লিক এসিড",
+            b: "শর্করা ও নিউক্লিক এসিড",
+            c: "শর্করা ও অ্যামাইনো এসিড",
+            d: "প্রোটিন ও অ্যামাইনো এসিড",
+          },
+          correct: "a",
+          explanation:
+            "ভাইরাসের মৌলিক গঠন খুবই সরল। প্রতিটি ভাইরাস কণা (ভিরিয়ন) মূলত দুটি প্রধান উপাদান নিয়ে গঠিত: একটি <b>নিউক্লিক অ্যাসিড</b> কোর (যা DNA অথবা RNA হতে পারে, কিন্তু উভয়ই একসাথে নয়) এবং এই নিউক্লিক অ্যাসিডকে ঘিরে থাকা একটি <b>প্রোটিন</b> আবরণ যাকে <b>ক্যাপসিড</b> বলে। কিছু ভাইরাসের ক্ষেত্রে এই ক্যাপসিডের বাইরে একটি লিপিড নির্মিত আবরণ (এনভেলপ) থাকতে পারে, যা তারা পোষক কোষ থেকে অর্জন করে।",
+        },
+        {
+          id: 6,
+          question: "নিচের কোনটি ডিএনএ (DNA) ভাইরাস?",
+          options: {
+            a: "র‍্যাবিস",
+            b: "হেপাটাইটিস সি",
+            c: "পোলিও",
+            d: "হারপিস",
+          },
+          correct: "d",
+          explanation:
+            "<b>হারপিস ভাইরাস</b> (যেমন হারপিস সিমপ্লেক্স ভাইরাস) একটি <b>DNA ভাইরাস</b>। এর জেনেটিক উপাদান হলো দ্বিসূত্রক DNA। অন্যদিকে, র‍্যাবিস ভাইরাস, হেপাটাইটিস সি ভাইরাস এবং পোলিও ভাইরাস প্রতিটিই RNA ভাইরাস।",
+        },
+        {
+          id: 7,
+          question: "নিচের কোন ভাইরাসটির বহিঃস্থ আবরণ নেই?",
+          options: {
+            a: "Human Immunodeficiency Virus (HIV)",
+            b: "Influenza Virus",
+            c: "Tobacco Mosaic Virus (TMV)",
+            d: "Herpes Virus",
+          },
+          correct: "c",
+          explanation:
+            "ভাইরাসকে তাদের বাইরের আবরণের উপস্থিতির উপর ভিত্তি করে 'এনভেলপড' (বহিঃস্থ আবরণযুক্ত) বা 'নন-এনভেলপড' (বহিঃস্থ আবরণহীন) হিসেবে শ্রেণীবদ্ধ করা হয়। <b>টোবাকো মোজাইক ভাইরাস (TMV)</b> হলো একটি <b>বহিঃস্থ আবরণহীন (non-enveloped)</b> ভাইরাস। এটি শুধুমাত্র একটি RNA জিনোম এবং প্রোটিন ক্যাপসিড দ্বারা গঠিত। বিপরীতে, Human Immunodeficiency Virus (HIV), ইনফ্লুয়েঞ্জা ভাইরাস এবং হারপিস ভাইরাস প্রতিটিই এনভেলপড ভাইরাস, যাদের ক্যাপসিডের বাইরে একটি লিপিড বাইলেয়ার এনভেলপ থাকে।",
+        },
+        {
+          id: 8,
+          question: "ভাইরাসের জন্য নিম্নের কোনটি সঠিক?",
+          options: {
+            a: "পোষকের বাইরে নিষ্ক্রিয়",
+            b: "প্রকরণ সৃষ্টি করে না",
+            c: "আবাসস্থল মৃত কোষ",
+            d: "বিপাকীয় ক্রিয়া সংঘটিত হয়",
+          },
+          correct: "a",
+          explanation:
+            "ভাইরাসকে প্রায়শই 'সীমান্তবর্তী জীব' বলা হয় কারণ তারা জীবন্ত এবং জড় উভয়ের বৈশিষ্ট্য প্রদর্শন করে। এর একটি প্রধান বৈশিষ্ট্য হলো, তারা <b>পোষক কোষের বাইরে নিষ্ক্রিয়</b> অবস্থায় থাকে। তারা নিজস্ব বিপাকীয় প্রক্রিয়া চালাতে পারে না এবং শুধুমাত্র পোষক কোষের অভ্যন্তরে প্রবেশ করার পরেই সক্রিয় হয় এবং সংখ্যাবৃদ্ধি করতে শুরু করে। ভাইরাস মিউটেশনের মাধ্যমে <b>প্রকরণ সৃষ্টি করতে পারে</b>। তাদের <b>আবাসস্থল সর্বদা জীবিত কোষ</b>, মৃত কোষ নয়। ভাইরাসের নিজস্ব কোনো <b>বিপাকীয় ক্রিয়া সংঘটিত হয় না</b>; তারা পোষক কোষের বিপাকীয় যন্ত্রপাতি ব্যবহার করে।",
+        },
+        {
+          id: 9,
+          question: "নিম্নের কোন তথ্যটি ভাইরাস সম্পর্কে সঠিক নয়?",
+          options: {
+            a: "ভাইরাস যেকোনো কোষেই সংখ্যা বৃদ্ধি করতে পারে",
+            b: "ব্যাকটেরিয়া আক্রমণকারী ভাইরাসকে ব্যাকটেরিওফায বলে",
+            c: "বার্ড ফ্লু ভাইরাস SARS করতে সক্ষম",
+            d: "ভাইরাসের ক্যাপসিড স্তরটিই এ্যান্টিজেনিক",
+          },
+          correct: "a",
+          explanation:
+            "এখানে একাধিক ভুল বা বিতর্কিত বিকল্প রয়েছে, তবে সবচেয়ে স্পষ্ট ভুলটি হলো (a)। <ul><li><b>(a) ভাইরাস যেকোনো কোষেই সংখ্যা বৃদ্ধি করতে পারে:</b> এটি সঠিক নয়। ভাইরাসগুলো <b>পোষক কোষের নির্দিষ্টতা (host specificity)</b> প্রদর্শন করে। প্রতিটি ভাইরাস শুধুমাত্র নির্দিষ্ট ধরণের কোষকে (যা তারা সংক্রমণ করতে পারে) আক্রমণ করে এবং সেই কোষে সংখ্যাবৃদ্ধি করতে পারে, যেকোনো কোষে নয়।</li><li><b>(b) ব্যাকটেরিয়া আক্রমণকারী ভাইরাসকে ব্যাকটেরিওফায বলে:</b> এটি সঠিক। ব্যাকটেরিওফায (সংক্ষেপে ফায) হলো এমন ভাইরাস যা ব্যাকটেরিয়াকে সংক্রমিত করে।</li><li><b>(c) বার্ড ফ্লু ভাইরাস SARS করতে সক্ষম:</b> এটি সঠিক নয়। <b>বার্ড ফ্লু ভাইরাস (যেমন H5N1)</b> ইনফ্লুয়েঞ্জা ভাইরাসের একটি প্রকরণ এবং এটি পাখি ও মানুষের মধ্যে গুরুতর শ্বাসতন্ত্রের রোগ সৃষ্টি করতে পারে। কিন্তু <b>SARS (Severe Acute Respiratory Syndrome)</b> একটি ভিন্ন রোগ যা <b>SARS-CoV (Severe Acute Respiratory Syndrome Coronavirus)</b> দ্বারা সৃষ্ট হয়, ইনফ্লুয়েঞ্জা ভাইরাস দ্বারা নয়।</li><li><b>(d) ভাইরাসের ক্যাপসিড স্তরটিই অ্যান্টিজেনিক:</b> এটি সঠিক। ভাইরাসের প্রোটিন ক্যাপসিড বা এনভেলপে অবস্থিত গ্লাইকোপ্রোটিনগুলো হোস্টের অনাক্রম্যতন্ত্র দ্বারা অ্যান্টিজেন হিসেবে স্বীকৃত হয় এবং ইমিউন প্রতিক্রিয়া সৃষ্টি করে।</li></ul><p>তবে, প্রশ্নের নির্দেশিকা অনুসারে, যদি একটি একক 'সঠিক নয়' বিকল্প নির্বাচন করতে হয়, তবে (a) সবচেয়ে সরাসরি এবং ভুল বিবৃতি। (c)ও ভুল, তবে এটি দুটি ভিন্ন ভাইরাসের রোগ নিয়ে তথ্যগত ভুল।</p>",
+        },
+        {
+          id: 10,
+          question: "কোনটিকে কেলাসিত করা যায়?",
+          options: {
+            a: "আর্কিব্যাকটেরিয়া",
+            b: "ম্যালেরিয়া পরজীবী",
+            c: "ভাইরাস",
+            d: "সায়ানোব্যাকটেরিয়া",
+          },
+          correct: "c",
+          explanation:
+            "<b>ভাইরাস</b> হলো একটি অনন্য জীব সত্তা কারণ জীবন্ত কোষের বাইরে এরা <b>নিষ্ক্রিয় কণার মতো কেলাসিত (crystallized)</b> হতে পারে। যখন ভাইরাসগুলোকে কেলাসিত করা হয়, তখন তারা জড় রাসায়নিক পদার্থের মতো আচরণ করে এবং তাদের প্রোটিন ও নিউক্লিক অ্যাসিডের একটি সুনির্দিষ্ট বিন্যাস প্রকাশ করে। এটি তাদের অন্যতম বৈশিষ্ট্য যা তাদের জীবন্ত এবং জড় প্রকৃতির মধ্যে সেতু হিসেবে কাজ করে। জীবন্ত কোষ যেমন আর্কিব্যাকটেরিয়া, ম্যালেরিয়া পরজীবী (প্রোটোজোয়া) এবং সায়ানোব্যাকটেরিয়াকে কেলাসিত করা যায় না।",
+        },
+        {
+          id: 11,
+          question: "নিম্নের কোনটি DNA ভাইরাস?",
+          options: {
+            a: "রেবিস",
+            b: "ইনফ্লুয়েঞ্জা",
+            c: "ভ্যাক্সিনিয়া",
+            d: "ইবোলা",
+          },
+          correct: "c",
+          explanation:
+            "<b>ভ্যাক্সিনিয়া ভাইরাস (Vaccinia virus)</b> হলো একটি <b>DNA ভাইরাস</b>। এটি পক্সভিরিডি পরিবারের সদস্য এবং গুটিবসন্ত রোগের টিকা (স্মলপক্স ভ্যাকসিন) তৈরিতে ঐতিহাসিকভাবে ব্যবহৃত হয়েছে। অন্যদিকে, রেবিস ভাইরাস, ইনফ্লুয়েঞ্জা ভাইরাস এবং ইবোলা ভাইরাস প্রতিটিই RNA ভাইরাস।",
+        },
+        {
+          id: 12,
+          question:
+            "কোন বিজ্ঞানী TMV কে তামাক পাতা থেকে কেলাসন প্রক্রিয়ায় পৃথক করেন?",
+          options: {
+            a: "অ্যাডোলফ মায়ার",
+            b: "আইভানোভস্কি",
+            c: "স্ট্যানলি",
+            d: "বোদেন",
+          },
+          correct: "c",
+          explanation:
+            "১৯৩৫ সালে আমেরিকান বায়োকেমিস্ট <b>ওয়েন্ডেল মেরেডিথ স্ট্যানলি (Wendell Meredith Stanley)</b> প্রথম <b>টোবাকো মোজাইক ভাইরাসকে (TMV)</b> তামাক পাতা থেকে <b>কেলাসন প্রক্রিয়ায়</b> সফলভাবে পৃথক করেন। এই আবিষ্কার প্রমাণ করে যে ভাইরাস জীবন্ত কোষের বাইরে নিষ্ক্রিয় রাসায়নিক কণার মতো আচরণ করতে পারে এবং এর জন্য তিনি ১৯৪৬ সালে নোবেল পুরস্কার লাভ করেন। অ্যাডোলফ মায়ার ও আইভানোভস্কি TMV রোগের কারণ আবিষ্কারে প্রাথমিক ভূমিকা রেখেছিলেন।",
+        },
+        {
+          id: 13,
+          question: "টোবাকো মোজাইক ভাইরাসের আকার কোন ধরনের?",
+          options: {
+            a: "দণ্ডাকার",
+            b: "গোলাকার",
+            c: "ঘনক্ষেত্রাকার",
+            d: "ব্যাঙাচি আকার",
+          },
+          correct: "a",
+          explanation:
+            "<b>টোবাকো মোজাইক ভাইরাস (TMV)</b> হলো একটি <b>দণ্ডাকার (rod-shaped)</b> ভাইরাস। এটি একটি হেলিকাল (সর্পিল) কাঠামোযুক্ত ক্যাপসিড দ্বারা গঠিত যা একটি একক সূত্রক RNA জিনোমকে ঘিরে রাখে।",
+        },
+        {
+          id: 14,
+          question: "ব্যাকটেরিওফায এক প্রকার-",
+          options: {
+            a: "ব্যাকটেরিয়া",
+            b: "ছত্রাক",
+            c: "ভাইরাস",
+            d: "শৈবাল",
+          },
+          correct: "c",
+          explanation:
+            "<b>ব্যাকটেরিওফায (Bacteriophage)</b>, সংক্ষেপে 'ফায', হলো এক প্রকার <b>ভাইরাস</b> যা ব্যাকটেরিয়াকে আক্রমণ করে এবং তাদের কোষের অভ্যন্তরে সংখ্যাবৃদ্ধি করে। 'ফায' শব্দটি গ্রিক শব্দ থেকে এসেছে যার অর্থ 'ভক্ষণ করা' বা 'খাওয়া', কারণ ব্যাকটেরিওফায ব্যাকটেরিয়াকে ধ্বংস করে।",
+        },
+        {
+          id: 15,
+          question: "কোন ভাইরাসে DNA থাকে?",
+          options: {
+            a: "TMV",
+            b: "HIV",
+            c: "T2",
+            d: "PRSV",
+          },
+          correct: "c",
+          explanation:
+            "<b>T2 ফায (T2 Phage)</b> হলো একটি ব্যাকটেরিওফায ভাইরাস এবং এর জেনেটিক উপাদান হলো <b>দ্বিসূত্রক DNA</b>। অন্যদিকে, TMV (Tobacco Mosaic Virus) একটি একক সূত্রক RNA ভাইরাস, HIV (Human Immunodeficiency Virus) একটি একক সূত্রক RNA রেট্রোভাইরাস (যা DNA তৈরি করতে পারে), এবং PRSV (Papaya Ringspot Virus) একটি একক সূত্রক RNA ভাইরাস।",
+        },
+        {
+          id: 16,
+          question: "ভাইরাস বংশবৃদ্ধিতে পোষকের কোন অঙ্গাণু ব্যবহৃত হয়?",
+          options: {
+            a: "মাইটোকন্ড্রিয়া",
+            b: "রাইবোজোম",
+            c: "কোষ আবরণী",
+            d: "নিউক্লিয়াস",
+          },
+          correct: "b",
+          explanation:
+            "ভাইরাস নিজস্ব প্রোটিন সংশ্লেষণ করতে পারে না। তারা পোষক কোষের অভ্যন্তরে প্রবেশ করে সেই কোষের <b>রাইবোজোম</b> ব্যবহার করে নিজেদের প্রোটিন (যেমন ক্যাপসিড প্রোটিন, এনজাইম) তৈরি করে। এই প্রোটিনগুলো নতুন ভাইরাস কণা গঠনে অপরিহার্য। যদিও ভাইরাস নিউক্লিয়াস বা মাইটোকন্ড্রিয়া সহ অন্যান্য কোষীয় অঙ্গাণুকে প্রভাবিত করতে পারে, তবে প্রোটিন সংশ্লেষণের জন্য রাইবোজোম অপরিহার্য।",
+        },
+        {
+          id: 17,
+          question: "টোবাকো মোজাইক ভাইরাস আবিষ্কার করেন কে?",
+          options: {
+            a: "আইভানোভসকি",
+            b: "মার্টিনাস বিজারি",
+            c: "স্ট্যানলি",
+            d: "ওয়াল্টার রিড",
+          },
+          correct: "b",
+          explanation:
+            "যদিও <b>দিমিত্রি আইভানোভস্কি (Dmitry Ivanovsky)</b> ১৮৯২ সালে প্রথম দেখিয়েছিলেন যে তামাকের মোজাইক রোগের কারণ একটি ব্যাকটেরিয়া নয়, বরং ফিল্টারযোগ্য কিছু, তবে তিনিই এটি ভাইরাস বলে নির্দিষ্টভাবে শনাক্ত করতে পারেননি। ১৮৯৮ সালে <b>মার্টিনাস বিজারিঙ্ক (Martinus Beijerinck)</b> আরও গবেষণা করে প্রমাণ করেন যে এই সংক্রামক উপাদানটি ব্যাকটেরিয়া থেকে ভিন্ন এবং তিনি এটিকে 'সংক্রামক জীবন্ত তরল' (contagium vivum fluidum) বলে অভিহিত করেন, যা আধুনিক ভাইরাসবিদ্যার ভিত্তি স্থাপন করে। তাই বিজারিঙ্ককেই টোবাকো মোজাইক ভাইরাসের প্রকৃত আবিষ্কারক হিসেবে গণ্য করা হয়। স্ট্যানলি এটিকে কেলাসিত করেন এবং ওয়াল্টার রিড হলুদ জ্বরের ভাইরাস আবিষ্কার করেন।",
+        },
+        {
+          id: 18,
+          question: "মানবদেহে ক্যান্সার কারী ভাইরাসকে কী বলে?",
+          options: {
+            a: "রেট্রোভাইরাস",
+            b: "অনকোভাইরাস",
+            c: "সাইমিয়ান ভাইরাস",
+            d: "ফ্ল্যাভি ভাইরাস",
+          },
+          correct: "b",
+          explanation:
+            "মানবদেহে ক্যান্সার সৃষ্টিকারী ভাইরাসকে <b>অনকোভাইরাস (Oncovirus)</b> বলে। এই ভাইরাসগুলো পোষক কোষে প্রবেশ করে তার কোষচক্র নিয়ন্ত্রণকারী জিনের কার্যকারিতা পরিবর্তন করে এবং কোষের অনিয়ন্ত্রিত বৃদ্ধি ঘটায়, যা ক্যান্সারের দিকে নিয়ে যায়। উদাহরণস্বরূপ, হিউম্যান প্যাপিলোমাভাইরাস (HPV) জরায়ুমুখের ক্যান্সার সৃষ্টি করে। যদিও কিছু রেট্রোভাইরাস (যেমন HTLV-1) অনকোভাইরাস হতে পারে, তবে 'অনকোভাইরাস' একটি সাধারণ শ্রেণীবিভাগ যা ক্যান্সার সৃষ্টিকারী যেকোনো ভাইরাসকে নির্দেশ করে। সাইমিয়ান ভাইরাস বানরের ভাইরাস এবং ফ্ল্যাভি ভাইরাস একটি RNA ভাইরাসের গোত্র।",
+        },
+        {
+          id: 19,
+          question: "বাধ্যতামূলক পরজীবী বলা হয় নিচের কোন জীবকে?",
+          options: {
+            a: "ছত্রাক",
+            b: "ব্যাকটেরিয়া",
+            c: "ভাইরাস",
+            d: "শৈবাল",
+          },
+          correct: "c",
+          explanation:
+            "<b>ভাইরাস</b> হলো <b>বাধ্যতামূলক পরজীবী (obligate parasite)</b>। এর অর্থ হলো, তারা জীবন্ত পোষক কোষের বাইরে নিজেদের বংশবৃদ্ধি করতে বা তাদের বিপাকীয় প্রক্রিয়া চালাতে পারে না। তারা পোষক কোষের বিপাকীয় যন্ত্রপাতি এবং সম্পদ ব্যবহার করে নিজেদের প্রতিলিপি তৈরি করে। ছত্রাক, ব্যাকটেরিয়া এবং শৈবাল স্ব-পরাশ্রয়ী বা পরজীবী উভয়ই হতে পারে, কিন্তু তারা ভাইরাসের মতো সম্পূর্ণরূপে পোষক কোষের উপর নির্ভরশীল নয়।",
+        },
+        {
+          id: 20,
+          question: "ভাইরাস শব্দের অর্থ কী?",
+          options: {
+            a: "ক্ষুদ্র",
+            b: "বিষ",
+            c: "ধ্বংসকারী",
+            d: "খাদক",
+          },
+          correct: "b",
+          explanation:
+            "<b>'ভাইরাস' (virus)</b> শব্দটি ল্যাটিন ভাষা থেকে এসেছে, যার আক্ষরিক অর্থ হলো <b>'বিষ' (poison)</b> বা 'বিষাক্ত তরল'। আণুবীক্ষণিক রোগ সৃষ্টিকারী এই জীবানুকে প্রথমে বিষাক্ত তরল হিসেবে ধারণা করা হয়েছিল, কারণ তারা ফিল্টারযোগ্য ছিল এবং রোগের কারণ হতে পারতো।",
+        },
+        {
+          id: 21,
+          question: "কোথায় দ্বিসূত্রক RNA দেখা যায়?",
+          options: {
+            a: "রিও",
+            b: "T2 ফায",
+            c: "TMV",
+            d: "ফ্ল্যাভি ভাইরাস",
+          },
+          correct: "a",
+          explanation:
+            "অধিকাংশ ভাইরাসের জিনোম একক সূত্রক DNA বা RNA হয়। তবে, কিছু ভাইরাসে দ্বিসূত্রক নিউক্লিক অ্যাসিডও পাওয়া যায়। <b>রিওভাইরাস (Reovirus)</b> গোত্রের ভাইরাসে <b>দ্বিসূত্রক RNA (double-stranded RNA or dsRNA)</b> জিনোম হিসেবে থাকে। T2 ফায একটি দ্বিসূত্রক DNA ভাইরাস, TMV এবং ফ্ল্যাভি ভাইরাস একক সূত্রক RNA ভাইরাস।",
+        },
+        {
+          id: 22,
+          question: "ভাইরাসের প্রোটিন নির্মিত আবরণকে কী বলে?",
+          options: {
+            a: "প্লাজমামেমব্রেন",
+            b: "কলার",
+            c: "জিনোম",
+            d: "ক্যাপসিড",
+          },
+          correct: "d",
+          explanation:
+            "ভাইরাসের নিউক্লিক অ্যাসিডের (DNA বা RNA) চারপাশে যে প্রোটিন নির্মিত আবরণ থাকে, তাকে <b>ক্যাপসিড (capsid)</b> বলে। ক্যাপসিড নিউক্লিক অ্যাসিডকে রক্ষা করে এবং ভাইরাসের আকৃতি নির্ধারণ করে। প্লাজমামেমব্রেন কোষের বাইরের আবরণ, কলার কিছু ব্যাকটেরিওফাযের গঠনে দেখা যায়, এবং জিনোম হলো ভাইরাসের জেনেটিক উপাদান (DNA বা RNA)।",
+        },
+        {
+          id: 23,
+          question:
+            "অ্যান্টিবায়োটিক কাদের ক্ষেত্রে কোনোরূপ প্রতিক্রিয়া সৃষ্টি করতে অক্ষম?",
+          options: {
+            a: "ভাইরাস",
+            b: "ব্যাকটেরিয়া",
+            c: "ছত্রাক",
+            d: "শৈবাল",
+          },
+          correct: "a",
+          explanation:
+            "<b>অ্যান্টিবায়োটিক</b> হলো এমন ওষুধ যা ব্যাকটেরিয়ার বৃদ্ধি রোধ করে বা তাদের ধ্বংস করে। অ্যান্টিবায়োটিকগুলো ব্যাকটেরিয়ার কোষ প্রাচীর গঠন, প্রোটিন সংশ্লেষণ বা নিউক্লিক অ্যাসিড প্রতিলিপিকরণের মতো নির্দিষ্ট জৈবিক প্রক্রিয়াকে লক্ষ্য করে কাজ করে। <b>ভাইরাস</b> এর নিজস্ব কোনো কোষীয় কাঠামো বা বিপাকীয় প্রক্রিয়া নেই, এবং তারা পোষক কোষের যন্ত্রপাতি ব্যবহার করে সংখ্যাবৃদ্ধি করে। এই কারণে অ্যান্টিবায়োটিক <b>ভাইরাসের উপর কোনো প্রভাব ফেলে না</b> এবং ভাইরাস সংক্রমণের চিকিৎসার জন্য অ্যান্টিভাইরাল ওষুধ প্রয়োজন হয়।",
+        },
+        {
+          id: 24,
+          question: "কোন ভাইরাসের আকৃতি পাউরুটির ন্যায়?",
+          options: {
+            a: "T2 ফায",
+            b: "HIV",
+            c: "ভ্যাকসিনিয়া",
+            d: "Ebola",
+          },
+          correct: "c",
+          explanation:
+            "<b>ভ্যাকসিনিয়া ভাইরাস (Vaccinia virus)</b>, যা পক্সভিরিডি পরিবারের সদস্য, এর আকৃতি <b>পাউরুটির মতো (loaf-shaped)</b> বা ডিম্বাকৃতির (ovoid) হয়। এটি একটি অপেক্ষাকৃত বড় এবং জটিল ভাইরাস। T2 ফায ব্যাঙাচি আকৃতির, HIV গোলাকার এবং ইবোলা ভাইরাস সূত্রাকার।",
+        },
+        {
+          id: 25,
+          question: "কোনটি বহিঃস্থ আবরণহীন ভাইরাস?",
+          options: {
+            a: "ইনফ্লুয়েঞ্জা ভাইরাস",
+            b: "হার্পিস ভাইরাস",
+            c: "HIV",
+            d: "TMV",
+          },
+          correct: "d",
+          explanation:
+            "<b>টোবাকো মোজাইক ভাইরাস (TMV)</b> হলো একটি <b>বহিঃস্থ আবরণহীন (non-enveloped)</b> ভাইরাস। এর মানে হলো, এর প্রোটিন ক্যাপসিডের বাইরে কোনো লিপিড আবরণ (এনভেলপ) থাকে না। ইনফ্লুয়েঞ্জা ভাইরাস, হার্পিস ভাইরাস এবং HIV (Human Immunodeficiency Virus) প্রতিটিই এনভেলপড ভাইরাস, যাদের ক্যাপসিডের বাইরে একটি লিপিড বাইলেয়ার এনভেলপ থাকে।",
+        },
+        {
+          id: 26,
+          question: "ফায কোন দেশি শব্দ?",
+          options: {
+            a: "ল্যাটিন",
+            b: "ফারসি",
+            c: "গ্রিক",
+            d: "ইংরেজি",
+          },
+          correct: "c",
+          explanation:
+            "<b>'ফায' (phage)</b> শব্দটি <b>গ্রিক</b> ভাষা থেকে এসেছে। এর অর্থ হলো 'ভক্ষণ করা' বা 'খাওয়া' (to devour)। যেহেতু ব্যাকটেরিওফায ব্যাকটেরিয়াকে আক্রমণ করে এবং ধ্বংস করে, তাই তাদের এই নামকরণ করা হয়েছে।",
+        },
+        {
+          id: 27,
+          question: "T2-ফায ভাইরাসের মাথার আকৃতি কেমন?",
+          options: {
+            a: "বৃত্তাকার",
+            b: "চতুর্ভুজাকার",
+            c: "ষড়ভূজাকার",
+            d: "ত্রিকোণাকার",
+          },
+          correct: "c",
+          explanation:
+            "T2-ফায ভাইরাস একটি জটিল কাঠামোযুক্ত ব্যাকটেরিওফায। এর মাথাটি <b>ষড়ভূজাকার (hexagonal)</b> এবং এর মধ্যে ভাইরাসের দ্বিসূত্রক DNA থাকে। মাথার সাথে একটি লেজ সংযুক্ত থাকে যা ব্যাকটেরিয়ার কোষে DNA প্রবেশে সাহায্য করে।",
+        },
+        {
+          id: 28,
+          question: "T2 ফাযের লেজে নিচের কোন এনজাইমটি উপস্থিত?",
+          options: {
+            a: "সেলুলেজ",
+            b: "সুক্রেজ",
+            c: "লাইসোজাইম",
+            d: "মলটেজ",
+          },
+          correct: "c",
+          explanation:
+            "T2 ফায ভাইরাসের লেজের শেষ প্রান্তে একটি বিশেষ এনজাইম, <b>লাইসোজাইম (Lysozyme)</b>, উপস্থিত থাকে। এই লাইসোজাইম ব্যাকটেরিয়ার কোষ প্রাচীরকে ভেঙে (লাইসিস করে) একটি ছিদ্র তৈরি করে, যার মাধ্যমে ভাইরাসের DNA পোষক ব্যাকটেরিয়ার অভ্যন্তরে প্রবেশ করতে পারে।",
+        },
+        {
+          id: 29,
+          question:
+            "একটি পোষক কোষে অনুলিপন পদ্ধতিতে কতগুলো T2 ফায ভাইরাস গঠিত হয়?",
+          options: {
+            a: "১০-৩০টি",
+            b: "১০০-৩০০টি",
+            c: "১০০০-৩০০০টি",
+            d: "১০,০০০-৩০,০০০টি",
+          },
+          correct: "b",
+          explanation:
+            "একটি পোষক ব্যাকটেরিয়াল কোষে <b>T2 ফায ভাইরাস</b> প্রবেশ করে এবং অনুলিপন (replication) প্রক্রিয়ার মাধ্যমে নিজেদের সংখ্যাবৃদ্ধি করে। এই প্রক্রিয়ায় একটি একক পোষক কোষে সাধারণত <b>১০০-৩০০টি</b> নতুন T2 ফায ভাইরাস কণা গঠিত হতে পারে। এই নতুন ভাইরাস কণাগুলো পোষক কোষকে ফেটে (লাইসিস করে) বেরিয়ে আসে এবং অন্যান্য ব্যাকটেরিয়াকে সংক্রমিত করে।",
+        },
+        {
+          id: 30,
+          question: "কোন ভাইরাসে একসূত্রক DNA বিদ্যমান?",
+          options: {
+            a: "কলিফায",
+            b: "ভ্যাক্সিনিয়া",
+            c: "রিওভাইরাস",
+            d: "TIV",
+          },
+          correct: "a",
+          explanation:
+            "বেশিরভাগ DNA ভাইরাসে দ্বিসূত্রক DNA থাকে। তবে, কিছু ভাইরাসে একসূত্রক DNA (single-stranded DNA or ssDNA) জিনোম হিসেবে বিদ্যমান থাকে। <b>কলিফায (Coliphage)</b> গোত্রের কিছু ভাইরাস (যেমন M13 ফায বা <span>φX174</span> ফায) এ ধরনের একসূত্রক DNA ধারণ করে। ভ্যাক্সিনিয়া একটি দ্বিসূত্রক DNA ভাইরাস, রিওভাইরাস একটি দ্বিসূত্রক RNA ভাইরাস এবং TIV (Tipula Iridescent Virus) একটি দ্বিসূত্রক DNA ভাইরাস।",
+        },
+        {
+          id: 31,
+          question: "ভাইরাসের বৈশিষ্ট্য কোনটি?",
+          options: {
+            a: "আদিকোষী",
+            b: "বিপাক ঘটে",
+            c: "বাধ্যতামূলক পরজীবী",
+            d: "DNA ও RNA উপস্থিত",
+          },
+          correct: "c",
+          explanation:
+            "ভাইরাসের একটি মৌলিক এবং সংজ্ঞায়িত বৈশিষ্ট্য হলো এরা <b>বাধ্যতামূলক পরজীবী (obligate parasite)</b>। এর অর্থ হলো, তারা নিজেদের বংশবৃদ্ধি বা বিপাকীয় প্রক্রিয়া চালানোর জন্য জীবন্ত পোষক কোষের উপর সম্পূর্ণ নির্ভরশীল। তারা পোষক কোষের বাইরে নিষ্ক্রিয় থাকে।</p><ul><li><b>আদিকোষী:</b> ভাইরাস আদিকোষী (প্রোক্যারিওটিক) বা প্রকৃতকোষী (ইউক্যারিওটিক) কোনোটিই নয়; তারা অকোষীয় জীব।</li><li><b>বিপাক ঘটে:</b> ভাইরাসের নিজস্ব কোনো বিপাক প্রক্রিয়া নেই; তারা পোষক কোষের বিপাকীয় যন্ত্রপাতি ব্যবহার করে।</li><li><b>DNA ও RNA উপস্থিত:</b> একটি একক ভাইরাস কণিকায় হয় DNA অথবা RNA থাকে, দুটো একসাথে উপস্থিত থাকে না।</li></ul>",
+        },
+        {
+          id: 32,
+          question: "নিচের কোনটি ইমার্জিং ভাইরাস?",
+          options: {
+            a: "BMV",
+            b: "HIV",
+            c: "পোলিও",
+            d: "রেবিস",
+          },
+          correct: "b",
+          explanation:
+            "<b>ইমার্জিং ভাইরাস (Emerging virus)</b> হলো সেই ভাইরাস যা সম্প্রতি একটি নতুন ভৌগোলিক অঞ্চলে বা পোষক প্রজাতিতে দেখা দিয়েছে অথবা যার প্রকোপ, বিস্তার বা রোগ সৃষ্টিকারী ক্ষমতা সম্প্রতি দ্রুত বৃদ্ধি পাচ্ছে। <b>HIV (Human Immunodeficiency Virus)</b> একটি ইমার্জিং ভাইরাস হিসেবে বিবেচিত হয়, যা ১৯৮০ এর দশকে বিশ্বব্যাপী মহামারী সৃষ্টি করেছিল এবং এখনো একটি বড় জনস্বাস্থ্য সমস্যা। BMV (Brome Mosaic Virus) একটি উদ্ভিদ ভাইরাস। পোলিও এবং রেবিস দীর্ঘকাল ধরে পরিচিত রোগ সৃষ্টিকারী ভাইরাস, যদিও তাদের প্রকোপ স্থান-কাল-পাত্রভেদে পরিবর্তিত হতে পারে।",
+        },
+        {
+          id: 33,
+          question: "কোন ভাইরাসে দ্বি-সূত্রক RNA থাকে?",
+          options: {
+            a: "TMV",
+            b: "রিও",
+            c: "HIV",
+            d: "TIV",
+          },
+          correct: "b",
+          explanation:
+            "বেশিরভাগ RNA ভাইরাসে একক সূত্রক RNA থাকে। তবে, কিছু ভাইরাসে <b>দ্বি-সূত্রক RNA (double-stranded RNA or dsRNA)</b> জিনোম হিসেবে বিদ্যমান থাকে। <b>রিওভাইরাস (Reovirus)</b> গোত্রের ভাইরাসে এই ধরনের জিনোম দেখা যায়। TMV (Tobacco Mosaic Virus) এবং HIV (Human Immunodeficiency Virus) উভয়ই একক সূত্রক RNA ভাইরাস। TIV (Tipula Iridescent Virus) একটি দ্বিসূত্রক DNA ভাইরাস।",
+        },
+        {
+          id: 34,
+          question: "নিচের কোনটি গোলাকার ভাইরাস?",
+          options: {
+            a: "TMV",
+            b: "HIV",
+            c: "T2 ফায",
+            d: "Ebola",
+          },
+          correct: "b",
+          explanation:
+            "<b>HIV (Human Immunodeficiency Virus)</b> হলো একটি <b>গোলাকার (spherical)</b> আকৃতির ভাইরাস। এটি একটি এনভেলপড ভাইরাস, যার বাইরের লিপিড এনভেলপ এটিকে গোলাকার আকৃতি প্রদান করে। TMV দণ্ডাকার, T2 ফায ব্যাঙাচি আকৃতির (জটিল কাঠামো) এবং ইবোলা ভাইরাস সূত্রাকার (filamentous)।",
+        },
+        {
+          id: 35,
+          question: "নিচের কোনটিকে সংক্রমণক্ষম পূর্ণাঙ্গ ভাইরাস কণা বলে?",
+          options: {
+            a: "ভিরিয়ন",
+            b: "ভিরয়েড",
+            c: "প্রিয়ন",
+            d: "নিউক্লিওক্যাপসিড",
+          },
+          correct: "a",
+          explanation:
+            "একটি <b>সংক্রমণক্ষম পূর্ণাঙ্গ ভাইরাস কণা</b>কে <b>ভিরিয়ন (virion)</b> বলে। একটি ভিরিয়নে ভাইরাসের জেনেটিক উপাদান (DNA বা RNA) এবং এটিকে আবৃত করে রাখা প্রোটিন ক্যাপসিড থাকে। কিছু ভিরিয়নের ক্ষেত্রে এর বাইরে একটি লিপিড এনভেলপও থাকতে পারে।</p><ul><li><b>ভিরয়েড (Viroid):</b> এটি কেবল একটি প্রোটিন আবরণবিহীন RNA অণু যা উদ্ভিদে রোগ সৃষ্টি করে।</li><li><b>প্রিয়ন (Prion):</b> এটি একটি অস্বাভাবিক প্রোটিন যা স্নায়বিক রোগ (যেমন BSE, CJD) সৃষ্টি করে, এতে কোনো নিউক্লিক অ্যাসিড থাকে না।</li><li><b>নিউক্লিওক্যাপসিড (Nucleocapsid):</b> এটি ভাইরাসের নিউক্লিক অ্যাসিড এবং প্রোটিন ক্যাপসিডের সমন্বিত গঠন, যা একটি ভিরিয়নের অংশ কিন্তু সম্পূর্ণ ভিরিয়ন নয় যদি এনভেলপ থাকে।</li></ul>",
+        },
+        {
+          id: 36,
+          question: "T2 ভাইরাসের DNA তে মোট কতটি জিন থাকে?",
+          options: {
+            a: "৮০ টি",
+            b: "৯০ টি",
+            c: "১২০টি",
+            d: "১৫০ টি",
+          },
+          correct: "b",
+          explanation:
+            "<b>T2 ফায (T2 Phage)</b> ভাইরাসের DNA তে প্রায় <b>৯০টি</b> জিন থাকে। এই জিনগুলো ভাইরাসের প্রোটিন সংশ্লেষণ, প্রতিলিপিকরণ এবং পোষক কোষকে সংক্রমিত করার জন্য প্রয়োজনীয় সকল তথ্য ধারণ করে।",
+        },
+        {
+          id: 37,
+          question: "ক্যাপসিড ভাইরাসের ক্ষেত্রে কোনটি সঠিক নয়?",
+          options: {
+            a: "DNA ও RNA থাকে",
+            b: "দৈহিক বৃদ্ধি নেই",
+            c: "পরিবেশের উদ্দীপনায় সাড়া দেয় না",
+            d: "কেলাসিত করা যায়",
+          },
+          correct: "a",
+          explanation:
+            "এই প্রশ্নটি কিছুটা বিভ্রান্তিকর, কারণ 'ক্যাপসিড ভাইরাসের ক্ষেত্রে' বলতে সম্ভবত 'ভাইরাসের ক্ষেত্রে' বোঝানো হয়েছে। বিকল্পগুলো ভাইরাসের সাধারণ বৈশিষ্ট্য সম্পর্কে।</p><ul><li><b>(a) DNA ও RNA থাকে:</b> এটি সঠিক নয়। একটি ভাইরাস কণিকায় (ভিরিয়ন) হয় <b>DNA</b> অথবা <b>RNA</b> থাকে, উভয়ই একসাথে উপস্থিত থাকে না। ক্যাপসিড হলো এই নিউক্লিক অ্যাসিডের আবরণ।</li><li><b>(b) দৈহিক বৃদ্ধি নেই:</b> এটি সঠিক। ভাইরাসের নিজস্ব কোনো দৈহিক বৃদ্ধি বা কোষ বিভাজন ঘটে না। তারা পোষক কোষে প্রতিলিপিকরণের মাধ্যমে সংখ্যাবৃদ্ধি করে।</li><li><b>(c) পরিবেশের উদ্দীপনায় সাড়া দেয় না:</b> এটি সঠিক। ভাইরাস জীবন্ত কোষের বাইরে জড় কণার মতো আচরণ করে এবং পরিবেশের উদ্দীপনায় (যেমন তাপ, আলো) সরাসরি সাড়া দেয় না।</li><li><b>(d) কেলাসিত করা যায়:</b> এটি সঠিক। জীবন্ত কোষের বাইরে ভাইরাসকে জড় রাসায়নিক পদার্থের মতো কেলাসিত করা যায়।</li></ul>",
+        },
+        {
+          id: 38,
+          question: "নিচের কোনটি উদ্ভিদ ভাইরাস?",
+          options: {
+            a: "ডেঙ্গু",
+            b: "T2 ফায",
+            c: "HIV",
+            d: "TMV",
+          },
+          correct: "d",
+          explanation:
+            "<b>TMV (Tobacco Mosaic Virus)</b> হলো একটি পরিচিত <b>উদ্ভিদ ভাইরাস</b> যা তামাক গাছ, টমেটো এবং অন্যান্য উদ্ভিদে মোজাইক রোগ সৃষ্টি করে। ডেঙ্গু এবং HIV মানবদেহের ভাইরাস, এবং T2 ফায ব্যাকটেরিয়ার ভাইরাস।",
+        },
+        {
+          id: 39,
+          question: "নিচের কোনটিতে রিভার্স-ট্রান্সক্রিপশন ঘটে?",
+          options: {
+            a: "ভ্যাক্সিনিয়া",
+            b: "ভ্যারিওলা",
+            c: "হেপাটাইটিস-বি",
+            d: "HIV",
+          },
+          correct: "d",
+          explanation:
+            "<b>রিভার্স-ট্রান্সক্রিপশন (Reverse transcription)</b> হলো এমন একটি প্রক্রিয়া যেখানে RNA টেমপ্লেট ব্যবহার করে DNA সংশ্লেষণ করা হয়। এই প্রক্রিয়াটি <b>রিভার্স ট্রান্সক্রিপ্টেজ (reverse transcriptase)</b> নামক এনজাইম দ্বারা সম্পন্ন হয়।</p><ul><li><b>HIV (Human Immunodeficiency Virus)</b> একটি <b>রেট্রোভাইরাস</b>, যার জেনেটিক উপাদান RNA। HIV তার জীবনচক্রে রিভার্স ট্রান্সক্রিপ্টেজ এনজাইম ব্যবহার করে তার RNA জিনোম থেকে DNA তৈরি করে, যা পরে পোষক কোষের জিনোমের সাথে একীভূত হয়।</li><li><b>হেপাটাইটিস-বি (Hepatitis B virus - HBV)</b> একটি DNA ভাইরাস হলেও, এর জীবনচক্রেও রিভার্স-ট্রান্সক্রিপশন প্রক্রিয়া জড়িত থাকে। এটি তার আংশিক দ্বিসূত্রক DNA কে সম্পূর্ণরূপে দ্বিসূত্রক DNA তে প্রতিলিপি করে, এবং পরে এই DNA থেকে pregenomic RNA তৈরি হয় যা আবার রিভার্স ট্রান্সক্রিপ্টেজ ব্যবহার করে DNA তে রূপান্তরিত হয়।</li><li>ভ্যাক্সিনিয়া এবং ভ্যারিওলা হলো DNA ভাইরাস এবং তারা সাধারণত সরাসরি DNA প্রতিলিপি তৈরি করে।</li></ul><p>প্রশ্নে যেহেতু একটি সেরা উত্তর চাওয়া হয়েছে, এবং HIV হলো রেট্রোভাইরাসদের মূল উদাহরণ যেখানে রিভার্স-ট্রান্সক্রিপশন প্রক্রিয়াটি তাদের জীবনচক্রের সংজ্ঞায়িত বৈশিষ্ট্য, তাই HIV সঠিক উত্তর।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                        <label class="option" data-option="${option}">
+                          <div class="circle">${option}</div>
+                          <span class="option-text">${question.options[option]}</span>
+                        </label>
+                      `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                           <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                           <div class="explanation-content">
+                             <div class="explanation-label">ব্যাখ্যা:</div>
+                             ${question.explanation}
+                           </div>
+                         </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                      <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                      <div class="options">
+                        ${optionsHTML}
+                      </div>
+                      ${explanationHTML}
+                    `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
